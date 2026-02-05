@@ -40,8 +40,9 @@ namespace Networking {
     public override void _Ready() {
       s_Me = this;
 
+      NetworkedVariableTypes.RegisterBuiltIn();
       RiptideLogger.Initialize(GD.Print, GD.Print, GD.PushWarning, GD.PushError, false);
-
+      
       _lobbyCreatedCallback = Callback<LobbyCreated_t>.Create(LobbyCreated);
       _lobbyEnteredCallback = Callback<LobbyEnter_t>.Create(LobbyEntered);
       _gameLobbyJoinRequestedCallback = Callback<GameLobbyJoinRequested_t>.Create(GameLobbyJoinRequested);
