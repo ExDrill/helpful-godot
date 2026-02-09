@@ -6,12 +6,9 @@ using Riptide.Transports.Steam;
 using Riptide.Utils;
 using Steamworks;
 
-namespace Networking
-{
-  public partial class NetworkManager : Node
-  {
-    private enum MessageType : ushort
-    {
+namespace Networking {
+  public partial class NetworkManager : Node {
+    private enum MessageType : ushort {
       OneWayRpc = 0,
       BounceRpc = 1,
       BounceFastRpc = 2,
@@ -41,8 +38,7 @@ namespace Networking
 
     private float _delay = 0.1f;
 
-    public override void _Ready()
-    {
+    public override void _Ready() {
       s_Me = this;
 
       RiptideLogger.Initialize(GD.Print, GD.Print, GD.PushWarning, GD.PushError, false);
@@ -52,14 +48,12 @@ namespace Networking
       _gameLobbyJoinRequestedCallback = Callback<GameLobbyJoinRequested_t>.Create(GameLobbyJoinRequested);
     }
 
-    public override void _PhysicsProcess(double delta)
-    {
+    public override void _PhysicsProcess(double delta) {
       if (LocalServer != null) LocalServer.Update();
       if (LocalClient != null) LocalClient.Update();
     }
 
-    public static void Register(Node node, string name, Action<Message> messageHandler)
-    {
+    public static void Register(Node node, string name, Action<Message> messageHandler) {
       NetworkNode source = GetNetworkNode(node);
 
       if (source == null) throw new Exception("Can not register Rpc for node that does not have a network node!");
@@ -67,8 +61,7 @@ namespace Networking
       source.Register(node, name, messageHandler);
     }
 
-    public static void Register<ValueType>(Node node, string name, NetworkedVariable<ValueType> syncedVariable)
-    {
+    public static void Register<ValueType>(Node node, string name, NetworkedVariable<ValueType> syncedVariable) {
       NetworkNode source = GetNetworkNode(node);
 
       if (source == null) throw new Exception("Can not register Rpc for node that does not have a network node!");
@@ -76,26 +69,22 @@ namespace Networking
       source.Register(node, name, syncedVariable);
     }
 
-    private static void SendToAllRemoteClients(Message message)
-    {
-      foreach (Connection client in LocalServer.Clients)
-      {
+    private static void SendToAllRemoteClients(Message message) {
+      foreach (Connection client in LocalServer.Clients) {
         if (client.Id == LocalClient.Id) continue;
 
         LocalServer.Send(message, client.Id);
       }
     }
 
-    public static NodeType Spawn<NodeType>(string assetId, Node parent, uint authority = 0) where NodeType : Node
-    {
+    public static NodeType Spawn<NodeType>(string assetId, Node parent, uint authority = 0) where NodeType : Node {
       if (!IsHost) throw new Exception("Scenes can not be network spawned from clients!");
 
       NetworkNode parentNetworkNode = GetNetworkNode(parent);
 
       string parentPath = parent.GetPath();
 
-      if (parentNetworkNode != null)
-      {
+      if (parentNetworkNode != null) {
         parentPath = parentNetworkNode.GetPathTo(parent);
       }
 
@@ -130,8 +119,7 @@ namespace Networking
       return node;
     }
 
-    private static void SpawnRemote(Message message)
-    {
+    private static void SpawnRemote(Message message) {
       if (IsHost) throw new Exception("Tried spawning remote network object on host?");
 
       string assetId = message.GetString();
@@ -165,8 +153,7 @@ namespace Networking
       parent.AddChild(node);
     }
 
-    public static void Destroy(Node node)
-    {
+    public static void Destroy(Node node) {
       if (!IsHost) throw new Exception("Scenes can not be network destroyed from clients!");
 
       NetworkNode source = GetNetworkNode(node);
@@ -185,8 +172,7 @@ namespace Networking
       node.QueueFree();
     }
 
-    private static void DestroyRemote(Message message)
-    {
+    private static void DestroyRemote(Message message) {
       uint id = message.GetUInt();
 
       NetworkNode source = s_Me._networkNodeRegistry[id];
@@ -200,10 +186,8 @@ namespace Networking
       node.QueueFree();
     }
 
-    public static NetworkNode GetNetworkNode(Node node)
-    {
-      if (node.HasNode("NetworkNode"))
-      {
+    public static NetworkNode GetNetworkNode(Node node) {
+      if (node.HasNode("NetworkNode")) {
         return node.GetNode<NetworkNode>("NetworkNode");
       }
 
@@ -214,8 +198,7 @@ namespace Networking
       return GetNetworkNode(parent);
     }
 
-    public static bool HasAuthority(Node node)
-    {
+    public static bool HasAuthority(Node node) {
       NetworkNode networkNode = GetNetworkNode(node);
 
       if (networkNode == null) throw new Exception("Can not get authority on a node that has no network node and is not a child of a node with a network node!");
@@ -223,26 +206,22 @@ namespace Networking
       return networkNode.HasAuthority();
     }
 
-    public static NetworkNode GetNetworkNode(uint id)
-    {
+    public static NetworkNode GetNetworkNode(uint id) {
       if (!s_Me._networkNodeRegistry.ContainsKey(id)) return null;
 
       return s_Me._networkNodeRegistry[id];
     }
 
-    private static int GetInitialBits(Message message)
-    {
+    private static int GetInitialBits(Message message) {
       return message.WrittenBits;
     }
 
-    private static Message CloneMessage(Message message, int initialBits)
-    {
+    private static Message CloneMessage(Message message, int initialBits) {
       Message clonedMessage = Message.Create();
       int bitsToRead = message.WrittenBits - initialBits;
       int readPosition = initialBits;
 
-      while (bitsToRead > 0)
-      {
+      while (bitsToRead > 0) {
         int bitsToWrite = Math.Min(bitsToRead, 8);
 
         byte bits;
@@ -258,8 +237,7 @@ namespace Networking
       return clonedMessage;
     }
 
-    public static void SendRpcToServer(Node node, string name, Action<Message> messageBuilder = null, MessageSendMode messageSendMode = MessageSendMode.Reliable)
-    {
+    public static void SendRpcToServer(Node node, string name, Action<Message> messageBuilder = null, MessageSendMode messageSendMode = MessageSendMode.Reliable) {
       NetworkNode source = GetNetworkNode(node);
 
       if (!IsInstanceValid(source)) GD.PushError("Trying to Send RPC From Invalid Instance " + name);
@@ -274,8 +252,7 @@ namespace Networking
       LocalClient.Send(message);
     }
 
-    public static void SendRpcToClients(Node node, string name, Action<Message> messageBuilder = null, MessageSendMode messageSendMode = MessageSendMode.Reliable)
-    {
+    public static void SendRpcToClients(Node node, string name, Action<Message> messageBuilder = null, MessageSendMode messageSendMode = MessageSendMode.Reliable) {
       NetworkNode source = GetNetworkNode(node);
 
       if (!IsInstanceValid(source)) GD.PushError("Trying to Send RPC From Invalid Instance " + name);
@@ -297,8 +274,7 @@ namespace Networking
       s_Me.HandleMessage(localMessage);
     }
 
-    public static void SendRpcToClient(Node node, ushort client, string name, Action<Message> messageBuilder = null, MessageSendMode messageSendMode = MessageSendMode.Reliable)
-    {
+    public static void SendRpcToClient(Node node, ushort client, string name, Action<Message> messageBuilder = null, MessageSendMode messageSendMode = MessageSendMode.Reliable) {
       NetworkNode source = GetNetworkNode(node);
 
       if (!IsInstanceValid(source)) GD.PushError("Trying to Send RPC From Invalid Instance " + name);
@@ -310,18 +286,14 @@ namespace Networking
 
       messageBuilder?.Invoke(message);
 
-      if (LocalClient.Id == client)
-      {
+      if (LocalClient.Id == client) {
         s_Me.HandleMessage(message);
-      }
-      else
-      {
+      } else {
         LocalServer.Send(message, client);
       }
     }
 
-    public static void BounceRpcToClients(Node node, string name, Action<Message> messageBuilder = null, MessageSendMode messageSendMode = MessageSendMode.Reliable)
-    {
+    public static void BounceRpcToClients(Node node, string name, Action<Message> messageBuilder = null, MessageSendMode messageSendMode = MessageSendMode.Reliable) {
       NetworkNode source = GetNetworkNode(node);
 
       if (!IsInstanceValid(source)) GD.PushError("Trying to Send RPC From Invalid Instance " + name);
@@ -336,8 +308,7 @@ namespace Networking
       LocalClient.Send(message);
     }
 
-    public static void BounceRpcToClientsFast(Node node, string name, Action<Message> messageBuilder = null, MessageSendMode messageSendMode = MessageSendMode.Reliable)
-    {
+    public static void BounceRpcToClientsFast(Node node, string name, Action<Message> messageBuilder = null, MessageSendMode messageSendMode = MessageSendMode.Reliable) {
       NetworkNode source = GetNetworkNode(node);
 
       if (!IsInstanceValid(source as Node)) GD.PushError("Trying to Send RPC From Invalid Instance " + name);
@@ -359,8 +330,7 @@ namespace Networking
       s_Me.HandleMessage(localMessage);
     }
 
-    public static bool Host(ushort port, ushort maxConnections)
-    {
+    public static bool Host(ushort port, ushort maxConnections) {
       LocalServer = new Server(new Riptide.Transports.Tcp.TcpServer());
 
       try
@@ -388,8 +358,7 @@ namespace Networking
       return true;
     }
 
-    public static bool Host()
-    {
+    public static bool Host() {
       GD.Print("Creating lobby...");
 
       SteamMatchmaking.CreateLobby(ELobbyType.k_ELobbyTypePublic, 16);
@@ -397,12 +366,9 @@ namespace Networking
       s_LocalSteamServer = new SteamServer();
       LocalServer = new Server(s_LocalSteamServer);
 
-      try
-      {
+      try {
         LocalServer.Start(0, 32, 0, false);
-      }
-      catch
-      {
+      } catch {
         LocalServer = null;
 
         return false;
@@ -423,8 +389,7 @@ namespace Networking
       return true;
     }
 
-    public static bool Join(string ip, ushort port)
-    {
+    public static bool Join(string ip, ushort port) {
       LocalClient = new Client(new Riptide.Transports.Tcp.TcpClient());
 
       LocalClient.Connect($"{ip}:{port}", 5, 0, null, false);
@@ -436,8 +401,7 @@ namespace Networking
       return true;
     }
 
-    public static bool Join(CSteamID serverId)
-    {
+    public static bool Join(CSteamID serverId) {
       LocalClient = new Client(new Riptide.Transports.Steam.SteamClient());
 
       LocalClient.Connect(serverId.ToString(), 5, 0, null, false);
@@ -449,12 +413,10 @@ namespace Networking
       return true;
     }
 
-    public static void Leave()
-    {
+    public static void Leave() {
       LocalClient.Disconnect();
 
-      if (IsHost)
-      {
+      if (IsHost) {
         LocalServer.Stop();
       }
 
@@ -463,12 +425,10 @@ namespace Networking
 
       LeftServer?.Invoke();
 
-      foreach (uint networkId in s_Me._networkNodeRegistry.Keys)
-      {
+      foreach (uint networkId in s_Me._networkNodeRegistry.Keys) {
         NetworkNode node = s_Me._networkNodeRegistry[networkId];
 
-        if (!node.IsQueuedForDeletion())
-        {
+        if (!node.IsQueuedForDeletion()) {
           node.GetParent().QueueFree();
         }
       }
@@ -476,43 +436,33 @@ namespace Networking
       s_Me._networkNodeRegistry.Clear();
     }
 
-    public static void LeaveLobby()
-    {
+    public static void LeaveLobby() {
       if (s_LocalSteamServer == null) return;
 
       SteamMatchmaking.LeaveLobby(CurrentLobby);
     }
 
-    private void HandleMessage(Message message)
-    {
+    private void HandleMessage(Message message) {
       uint id = message.GetUInt();
       string path = message.GetString();
       string name = message.GetString();
 
       NetworkNode source = GetNetworkNode(id);
 
-      if (source == null)
-      {
-        if (message.SendMode == MessageSendMode.Reliable)
-        {
+      if (source == null) {
+        if (message.SendMode == MessageSendMode.Reliable) {
           throw new Exception("Can't handle reliable rpc " + name + " for node " + id + ":" + path + " because the network node does not exist!");
-        }
-        else
-        {
+        } else {
           GD.PushWarning("Can't handle unreliable rpc " + name + " for node " + id + ":" + path + " because the network node does not exist!");
         }
 
         return;
       }
 
-      if (!source.GetParent().HasNode(path))
-      {
-        if (message.SendMode == MessageSendMode.Reliable)
-        {
+      if (!source.GetParent().HasNode(path)) {
+        if (message.SendMode == MessageSendMode.Reliable) {
           throw new Exception("Can't handle reliable rpc " + name + " for node " + id + ":" + path + " because the node does not exist!");
-        }
-        else
-        {
+        } else {
           GD.PushWarning("Can't handle unreliable rpc " + name + " for node " + id + ":" + path + " because the node does not exist!");
         }
 
@@ -522,14 +472,11 @@ namespace Networking
       source.HandleMessage(path, name, message);
     }
 
-    private void OnMessageRecieved(object _, MessageReceivedEventArgs eventArguments)
-    {
-      if (eventArguments.MessageId == 1 || eventArguments.MessageId == 2)
-      {
+    private void OnMessageRecieved(object _, MessageReceivedEventArgs eventArguments) {
+      if (eventArguments.MessageId == 1 || eventArguments.MessageId == 2) {
         Message relayMessage = Message.Create(eventArguments.Message.SendMode, 0);
 
-        while (eventArguments.Message.UnreadBits > 0)
-        {
+        while (eventArguments.Message.UnreadBits > 0) {
           int bitsToWrite = Math.Min(eventArguments.Message.UnreadBits, 8);
 
           byte bits;
@@ -539,14 +486,11 @@ namespace Networking
           relayMessage.AddBits(bits, bitsToWrite);
         }
 
-        if (eventArguments.MessageId == 1)
-        {
+        if (eventArguments.MessageId == 1) {
           LocalServer.SendToAll(relayMessage);
         }
-        else
-        {
-          foreach (Connection connection in LocalServer.Clients)
-          {
+        else {
+          foreach (Connection connection in LocalServer.Clients) {
             if (connection == eventArguments.FromConnection) continue;
 
             LocalServer.Send(relayMessage, connection.Id);
@@ -556,22 +500,19 @@ namespace Networking
         return;
       }
 
-      if (eventArguments.MessageId == (ushort)MessageType.SpawnNetworkObject)
-      {
+      if (eventArguments.MessageId == (ushort)MessageType.SpawnNetworkObject) {
         SpawnRemote(eventArguments.Message);
 
         return;
       }
 
-      if (eventArguments.MessageId == (ushort)MessageType.DestroyNetworkObject)
-      {
+      if (eventArguments.MessageId == (ushort)MessageType.DestroyNetworkObject) {
         DestroyRemote(eventArguments.Message);
 
         return;
       }
 
-      if (eventArguments.MessageId == (ushort)MessageType.SyncClient)
-      {
+      if (eventArguments.MessageId == (ushort)MessageType.SyncClient) {
         SyncClient(eventArguments.Message);
 
         return;
@@ -580,18 +521,15 @@ namespace Networking
       HandleMessage(eventArguments.Message);
     }
 
-    private void OnClientConnected(object server, ServerConnectedEventArgs eventArguments)
-    {
-      if (eventArguments.Client.Id != LocalClient.Id)
-      {
+    private void OnClientConnected(object server, ServerConnectedEventArgs eventArguments) {
+      if (eventArguments.Client.Id != LocalClient.Id) {
         GD.Print($"Remote client {eventArguments.Client.Id} connected!");
 
         Message message = Message.Create(MessageSendMode.Reliable, MessageType.SyncClient);
 
         message.AddInt(_networkNodeRegistry.Keys.Count);
 
-        foreach (KeyValuePair<uint, NetworkNode> pair in _networkNodeRegistry)
-        {
+        foreach (KeyValuePair<uint, NetworkNode> pair in _networkNodeRegistry) {
           NetworkNode source = pair.Value;
 
           Node parent = source.GetParent().GetParent();
@@ -599,8 +537,7 @@ namespace Networking
 
           string parentPath = parent.GetPath();
 
-          if (parentNetworkNode != null)
-          {
+          if (parentNetworkNode != null) {
             parentPath = parentNetworkNode.GetPathTo(parent);
           }
 
@@ -618,19 +555,16 @@ namespace Networking
       ClientConnected?.Invoke(eventArguments);
     }
 
-    private void OnClientDisconnected(object server, ServerDisconnectedEventArgs eventArguments)
-    {
+    private void OnClientDisconnected(object server, ServerDisconnectedEventArgs eventArguments) {
       if (eventArguments.Client.Id != LocalClient.Id) GD.Print($"Remote client {eventArguments.Client.Id} disconnected!");
 
       ClientDisconnected?.Invoke(eventArguments);
     }
 
-    private void SyncClient(Message message)
-    {
+    private void SyncClient(Message message) {
       int nodesToSpawn = message.GetInt();
 
-      for (int index = 0; index < nodesToSpawn; index++)
-      {
+      for (int index = 0; index < nodesToSpawn; index++) {
         string assetId = message.GetString();
 
         bool networkNodeRelativeParent = message.GetBool();
@@ -663,8 +597,7 @@ namespace Networking
       }
     }
 
-    private void LobbyCreated(LobbyCreated_t lobbyCreated)
-    {
+    private void LobbyCreated(LobbyCreated_t lobbyCreated) {
       GD.Print("Created lobby! " + (lobbyCreated.m_eResult == EResult.k_EResultOK));
 
       SteamMatchmaking.SetLobbyData((CSteamID)lobbyCreated.m_ulSteamIDLobby, "name", "Project Squad Test Lobby");
@@ -673,8 +606,7 @@ namespace Networking
       CurrentLobby = (CSteamID)lobbyCreated.m_ulSteamIDLobby;
     }
 
-    private void LobbyEntered(LobbyEnter_t lobbyEntered)
-    {
+    private void LobbyEntered(LobbyEnter_t lobbyEntered) {
       if (IsHost) return;
 
       GD.Print("Entered lobby! " + SteamMatchmaking.GetLobbyData((CSteamID)lobbyEntered.m_ulSteamIDLobby, "name"));
@@ -686,8 +618,7 @@ namespace Networking
       Join(serverId);
     }
 
-    private void GameLobbyJoinRequested(GameLobbyJoinRequested_t gameLobbyJoinRequested)
-    {
+    private void GameLobbyJoinRequested(GameLobbyJoinRequested_t gameLobbyJoinRequested) {
       GD.Print("Requested join lobby! " + SteamMatchmaking.GetLobbyData(gameLobbyJoinRequested.m_steamIDLobby, "name"));
 
       SteamMatchmaking.JoinLobby(gameLobbyJoinRequested.m_steamIDLobby);
