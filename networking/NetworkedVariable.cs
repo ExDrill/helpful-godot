@@ -111,7 +111,7 @@ public enum VariableSyncMode {
 }
 
 public enum VariableAuthority {
-  NodeOwner,
+  Client,
   Server
 }
 
